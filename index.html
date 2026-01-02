@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Trollin' Wilds - Professional Edition</title>
-    <script src="https://www.paypal.com/sdk/js?client-id=ASCq5RYMUcN-l9GQbjDJ9KmoFj4VYdUYdvY-xW40l4mEWnEWu5pO0ddVtABdyiUiISoOZdsWf5IL_Yxt&currency=CZK"></script>
+    <script src="https://www.paypal.com/sdk/js?client-id=ASCq5RYMUcN-l9GQbjDJ9KmoFj4VYdUYdvY-xW40I4mEWnEWu5pO0ddVtABdyiUilSoOZdsWf5IL_Yxt&currency=CZK"></script>
     
     <style>
         /* CELKOVÝ VZHLED */
@@ -41,7 +41,7 @@
             padding: 15px; 
             border-radius: 10px; 
             height: 420px; 
-            justify-content: center;
+            justify-content: center; 
             overflow: hidden;
             border: 2px solid #333;
         }
@@ -206,7 +206,7 @@
 
 <script>
 // --- KONFIGURACE SERVERU ---
-const SERVER_URL = "https://trollin-wilds-paypal.onrender.com"; // <-- SEM VLOŽ URL Z RENDERU
+const SERVER_URL = "https://trollin-wilds-paypal.onrender.com"; 
 const USER_ID = "player_1";
 
 const SYMS = { 1: "img/7.png", 2: "img/bell.png", 3: "img/melon.png", 4: "img/plum.png", 5: "img/orange.png", 6: "img/lemon.png", 7: "img/cherry.png", 8: "img/star.png", 9: "img/joker.png" };
@@ -264,12 +264,6 @@ paypal.Buttons({
             purchase_units: [{ amount: { currency_code: 'CZK', value: depositAmount.toString() } }]
         });
     },
-paypal.Buttons({
-    createOrder: function(data, actions) {
-        return actions.order.create({
-            purchase_units: [{ amount: { currency_code: 'CZK', value: depositAmount.toString() } }]
-        });
-    },
     onApprove: function(data, actions) {
         return actions.order.capture().then(async function(details) {
             document.getElementById("status").innerText = "OVĚŘOVÁNÍ PLATBY...";
@@ -295,7 +289,7 @@ paypal.Buttons({
             }
         });
     }
-}).render('#paypal-button-container'); // <--- TATO ZÁVORKA TI V KÓDU CHYBĚLA
+}).render('#paypal-button-container');
 
 // 4. LOGIKA HRY
 function getSymHTML(id) { return `<img src="${SYMS[id]}" alt="${id}">`; }
@@ -411,7 +405,4 @@ function highlightWins() {
 init();
 </script>
 </body>
-
 </html>
-
-
