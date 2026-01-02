@@ -264,11 +264,16 @@ paypal.Buttons({
             purchase_units: [{ amount: { currency_code: 'CZK', value: depositAmount.toString() } }]
         });
     },
-onApprove: function(data, actions) {
+paypal.Buttons({
+    createOrder: function(data, actions) {
+        return actions.order.create({
+            purchase_units: [{ amount: { currency_code: 'CZK', value: depositAmount.toString() } }]
+        });
+    },
+    onApprove: function(data, actions) {
         return actions.order.capture().then(async function(details) {
             document.getElementById("status").innerText = "OVĚŘOVÁNÍ PLATBY...";
             
-            // Serveru pošleme jen ID objednávky k bezpečnému ověření
             const response = await fetch(`${SERVER_URL}/confirm_payment`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -290,6 +295,7 @@ onApprove: function(data, actions) {
             }
         });
     }
+}).render('#paypal-button-container'); // <--- TATO ZÁVORKA TI V KÓDU CHYBĚLA
 
 // 4. LOGIKA HRY
 function getSymHTML(id) { return `<img src="${SYMS[id]}" alt="${id}">`; }
@@ -407,4 +413,5 @@ init();
 </body>
 
 </html>
+
 
