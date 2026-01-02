@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Trollin' Wilds - Professional Edition</title>
+    <script src="https://www.paypal.com/sdk/js?client-id=AXkhDur_ODa6U4lTePX4eZjYNdY0ZW_M3HAGbRLLpN-L50CkfC-OR1hZSxACds2DeLrVhNWCCd1JGrSj&currency=CZK"></script>
+    
+    <style>
+        /* CELKOVÝ VZHLED */
+        body { 
+            background: #0a0a0a; 
+            color: white; 
+            font-family: 'Arial Black', Gadget, sans-serif; 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh;
+            justify-content: center;
+        }
+
+        /* HLAVNÍ KONTEJNER */
+        .game-container { 
+            width: 95%; 
+            max-width: 1200px; 
+            background: #222; 
+            padding: 20px; 
+            border: 4px solid #444; 
+            border-radius: 20px; 
+            box-shadow: 0 0 50px rgba(0,0,0,0.9);
+            position: relative;
+        }
+
+        h1 { margin: 10px 0; color: #fff; text-shadow: 2px 2px #000; text-align: center; }
+
+        /* MŘÍŽKA SLOTŮ */
+        .grid { 
+            display: flex; 
+            gap: 12px; 
+            background: #000; 
+            padding: 15px; 
+            border-radius: 10px; 
+            height: 420px; 
+            justify-content: center;
+            overflow: hidden;
+            border: 2px solid #333;
+        }
+
+        .reel { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            width: 180px; 
+            will-change: transform; 
+        }
+
+        @keyframes spinDown { 0% { transform: translateY(-600px); } 100% { transform: translateY(0); } }
+        .spinning { animation: spinDown 0.1s linear infinite; filter: blur(3px); }
+
+        .symbol { 
+            width: 100%; 
+            height: 130px; 
+            background: #151515; 
+            border-radius: 8px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            flex-shrink: 0; 
+        }
+
+        .symbol img { width: 85%; height: 85%; object-fit: contain; }
+        .symbol.win { background: #443300; border: 3px solid gold; box-shadow: inset 0 0 20px gold; }
+
+        /* SPODNÍ PANEL */
+        .bottom-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            background: #000;
+            padding: 15px 25px;
+            margin-top: 20px;
+            border-radius: 15px;
+            border: 1px solid #333;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .label {
+            color: #888;
+            font-size: 11px;
+            margin-bottom: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .display-box {
+            background: #111;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 12px 5px;
+            width: 100%;
+            text-align: center;
+            font-size: 24px;
+            color: #fff;
+        }
+
+        .btn-adjust {
+            background: #004488;
+            color: white;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .spin-btn {
+            width: 85px;
+            height: 85px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffcc00, #aa8800);
+            border: 5px solid #333;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* PAYPAL SEKCE */
+        .deposit-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: #111;
+            border-radius: 15px;
+            border: 1px solid #444;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .amt-btn {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+
+        .amt-btn.active { background: gold; color: black; border-color: gold; }
+
+        #status { height: 30px; font-size: 20px; color: gold; text-align: center; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <h1>Trollin' Wilds</h1>
+    <div id="status">PŘIPOJOVÁNÍ K SERVERU...</div>
+    
+    <div class="grid" id="slot-grid"></div>
+
+    <div class="bottom-bar">
+        <div class="control-group">
+            <span class="label">SÁZKA (Kč)</span>
+            <div style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                <button class="btn-adjust" onclick="changeBet(-1)" id="bet-minus">−</button>
+                <div class="display-box" id="current-bet">10</div>
+                <button class="btn-adjust" onclick="changeBet(1)" id="bet-plus">+</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <span class="label">VÝHRA (Kč)</span>
+            <div class="display-box" id="last-win" style="color: gold; font-weight: bold;">0.00</div>
+        </div>
+
+        <div class="control-group">
+            <span class="label">HOTOVOST (Kč)</span>
+            <div class="display-box" id="balance">0.00</div>
+        </div>
+
+        <div class="spin-section">
+            <button class="spin-btn" id="spin-btn" onclick="startSpin()">SPIN</button>
+        </div>
+    </div>
+
+    <div class="deposit-section">
+        <span class="label">Dobít kredity</span>
+        <div style="margin-bottom: 15px;">
+            <button class="amt-btn active" onclick="setDepositAmount(100, this)">100 Kč</button>
+            <button class="amt-btn" onclick="setDepositAmount(500, this)">500 Kč</button>
+            <button class="amt-btn" onclick="setDepositAmount(1000, this)">1000 Kč</button>
+        </div>
+        <div id="paypal-button-container" style="width: 250px;"></div>
+    </div>
+</div>
+
+<script>
+// --- KONFIGURACE SERVERU ---
+const SERVER_URL = "https://trollin-wilds-paypal.onrender.com"; // <-- SEM VLOŽ URL Z RENDERU
+const USER_ID = "player_1";
+
+const SYMS = { 1: "img/7.png", 2: "img/bell.png", 3: "img/melon.png", 4: "img/plum.png", 5: "img/orange.png", 6: "img/lemon.png", 7: "img/cherry.png", 8: "img/star.png", 9: "img/joker.png" };
+const WILD = 9;
+const LINE_PAY = { 1: [0, 0, 50, 150, 300], 2: [0, 0, 25, 75, 150], 3: [0, 0, 25, 75, 150], 4: [0, 0, 10, 25, 50], 5: [0, 0, 10, 25, 50], 6: [0, 0, 10, 25, 50], 7: [0, 0, 10, 25, 50] };
+const BET_LINES = [[1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],[0,0,1,2,2],[2,2,1,0,0],[1,0,1,2,1],[1,2,1,0,1],[1,0,0,0,1]];
+const REELS_DATA = [[5,8,7,2,4,7,3,9,4,5,2,4,6,1,3,6,4,2,5,6,1,5,4,3,7,2,3,1,6,7,1,6,5,7,1],[5,6,4,5,6,1,4,3,6,2,4,1,7,9,4,3,7,2,6,7,3,2,5,6,7,5,1,4,8,2,7,5,1,3],[7,5,4,3,5,6,1,4,6,3,1,8,6,2,7,1,2,7,5,4,2,5,3,7,2,3,1,9,4,6],[4,5,2,1,3,7,1,4,6,2,1,7,4,5,2,9,6,3,7,5,1,6,4,3,7,4,5,6,3,2,6,8,5,7],[5,2,3,6,4,3,7,4,3,2,1,4,5,7,1,6,7,5,3,4,2,6,8,5,6,1,7,2,9,1,5,6,1,7,4]];
+
+let balance = 0;
+let currentBet = 10;
+let depositAmount = 100;
+let screen = [[],[],[],[],[]];
+let isSpinning = false;
+
+// 1. NAČTENÍ ZŮSTATKU ZE SERVERU PŘI STARTU
+async function loadBalance() {
+    try {
+        const response = await fetch(`${SERVER_URL}/get_balance?user_id=${USER_ID}`);
+        const data = await response.json();
+        balance = data.balance;
+        updateUI(0, false);
+        document.getElementById("status").innerText = "PŘIPRAVEN";
+    } catch (error) {
+        console.error("Chyba při načítání:", error);
+        document.getElementById("status").innerText = "CHYBA SPOJENÍ";
+    }
+}
+
+// 2. AKTUALIZACE UI A SYNCHRONIZACE SE SERVEREM
+async function updateUI(win, shouldSave = true) {
+    document.getElementById("balance").innerText = balance.toFixed(2);
+    document.getElementById("last-win").innerText = win.toFixed(2);
+    
+    if (shouldSave) {
+        try {
+            await fetch(`${SERVER_URL}/update_balance`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: USER_ID, balance: balance })
+            });
+        } catch (e) { console.error("Chyba při ukládání:", e); }
+    }
+}
+
+// 3. PAYPAL TLAČÍTKO
+function setDepositAmount(amt, btn) {
+    depositAmount = amt;
+    document.querySelectorAll('.amt-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+}
+
+paypal.Buttons({
+    createOrder: function(data, actions) {
+        return actions.order.create({
+            purchase_units: [{ amount: { currency_code: 'CZK', value: depositAmount.toString() } }]
+        });
+    },
+    onApprove: function(data, actions) {
+        return actions.order.capture().then(async function(details) {
+            const response = await fetch(`${SERVER_URL}/confirm_payment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: USER_ID, amount: depositAmount })
+            });
+            const result = await response.json();
+            balance = result.new_balance;
+            updateUI(0, false);
+            alert("Platba úspěšná! Kredit byl připsán na server.");
+        });
+    }
+}).render('#paypal-button-container');
+
+// 4. LOGIKA HRY
+function getSymHTML(id) { return `<img src="${SYMS[id]}" alt="${id}">`; }
+
+function changeBet(direction) {
+    if (isSpinning) return;
+    let step = (currentBet >= 10 && (currentBet + direction * 10) >= 10) ? 10 : 1;
+    let newBet = currentBet + (direction * step);
+    if (newBet >= 1 && newBet <= 500) {
+        currentBet = newBet;
+        document.getElementById("current-bet").innerText = currentBet;
+    }
+}
+
+function init() {
+    const grid = document.getElementById("slot-grid");
+    grid.innerHTML = "";
+    for(let x=0; x<5; x++) {
+        let reelDiv = document.createElement("div");
+        reelDiv.className = "reel";
+        reelDiv.id = `reel-${x}`;
+        for(let y=0; y<8; y++) {
+            let s = document.createElement("div");
+            s.className = "symbol";
+            s.id = `s_${x}_${y}`;
+            s.innerHTML = getSymHTML(Math.floor(Math.random() * 7) + 1);
+            reelDiv.appendChild(s);
+        }
+        grid.appendChild(reelDiv);
+    }
+    loadBalance();
+}
+
+async function startSpin() {
+    if (isSpinning || balance < currentBet) {
+        if (balance < currentBet) alert("Nedostatek kreditů!");
+        return;
+    }
+    isSpinning = true;
+    balance -= currentBet;
+    updateUI(0);
+    document.getElementById("status").innerText = "HRAJEŠ...";
+    document.querySelectorAll('.symbol').forEach(s => s.classList.remove('win'));
+
+    for(let i=0; i<5; i++) {
+        setTimeout(() => document.getElementById(`reel-${i}`).classList.add('spinning'), i * 60);
+    }
+
+    await new Promise(r => setTimeout(r, 1200));
+    let totalWin = calculateWins();
+
+    for(let i=0; i<5; i++) {
+        await new Promise(r => setTimeout(r, 180));
+        let reel = document.getElementById(`reel-${i}`);
+        for(let y=0; y<3; y++) {
+            document.getElementById(`s_${i}_${y}`).innerHTML = getSymHTML(screen[i][y]);
+        }
+        reel.classList.remove('spinning');
+    }
+
+    if(totalWin > 0) {
+        balance += totalWin;
+        document.getElementById("status").innerText = "VÝHRA!";
+        highlightWins();
+    } else {
+        document.getElementById("status").innerText = "";
+    }
+
+    updateUI(totalWin);
+    isSpinning = false;
+}
+
+function calculateWins() {
+    for(let x=0; x<5; x++) {
+        let tape = REELS_DATA[x];
+        let stop = Math.floor(Math.random() * tape.length);
+        for(let y=0; y<3; y++) screen[x][y] = tape[(stop + y) % tape.length];
+    }
+    let win = 0;
+    let betPerLine = currentBet / 10; 
+    BET_LINES.forEach(line => {
+        let activeSym = screen[0][line[0]];
+        if (activeSym === WILD) {
+            for(let i=1; i<5; i++) { if(screen[i][line[i]] !== WILD) { activeSym = screen[i][line[i]]; break; } }
+        }
+        let matches = 1;
+        for(let x=1; x<5; x++) {
+            if (screen[x][line[x]] === activeSym || screen[x][line[x]] === WILD) matches++; else break;
+        }
+        let paySym = (activeSym === WILD) ? 1 : activeSym;
+        if(LINE_PAY[paySym] && LINE_PAY[paySym][matches-1] > 0) { win += LINE_PAY[paySym][matches-1] * betPerLine; }
+    });
+    return win;
+}
+
+function highlightWins() {
+    BET_LINES.forEach(line => {
+        let activeSym = screen[0][line[0]];
+        if (activeSym === WILD) {
+            for(let i=1; i<5; i++) { if(screen[i][line[i]] !== WILD) { activeSym = screen[i][line[i]]; break; } }
+        }
+        let matches = 1;
+        for(let x=1; x<5; x++) {
+            if (screen[x][line[x]] === activeSym || screen[x][line[x]] === WILD) matches++; else break;
+        }
+        let paySym = (activeSym === WILD) ? 1 : activeSym;
+        if(LINE_PAY[paySym] && LINE_PAY[paySym][matches-1] > 0) {
+            for(let i=0; i<matches; i++) document.getElementById(`s_${i}_${line[i]}`).classList.add('win');
+        }
+    });
+}
+
+init();
+</script>
+</body>
+</html>
