@@ -264,20 +264,32 @@ paypal.Buttons({
             purchase_units: [{ amount: { currency_code: 'CZK', value: depositAmount.toString() } }]
         });
     },
-    onApprove: function(data, actions) {
+onApprove: function(data, actions) {
         return actions.order.capture().then(async function(details) {
+            document.getElementById("status").innerText = "OVĚŘOVÁNÍ PLATBY...";
+            
+            // Serveru pošleme jen ID objednávky k bezpečnému ověření
             const response = await fetch(`${SERVER_URL}/confirm_payment`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: USER_ID, amount: depositAmount })
+                body: JSON.stringify({ 
+                    user_id: USER_ID, 
+                    order_id: data.orderID 
+                })
             });
+            
             const result = await response.json();
-            balance = result.new_balance;
-            updateUI(0, false);
-            alert("Platba úspěšná! Kredit byl připsán na server.");
+            if (result.status === "verified") {
+                balance = result.new_balance;
+                updateUI(0, false);
+                document.getElementById("status").innerText = "PLATBA PŘIPSÁNA!";
+                alert("Platba úspěšná! Kredit byl bezpečně ověřen a připsán.");
+            } else {
+                document.getElementById("status").innerText = "CHYBA OVĚŘENÍ";
+                alert("Chyba: " + (result.message || "Platbu nebylo možné ověřit."));
+            }
         });
     }
-}).render('#paypal-button-container');
 
 // 4. LOGIKA HRY
 function getSymHTML(id) { return `<img src="${SYMS[id]}" alt="${id}">`; }
@@ -395,3 +407,4 @@ init();
 </body>
 
 </html>
+
